@@ -20,11 +20,11 @@ async function getRequest(module, pageNumber){
 	module =  module.replace("-parent","");
 	await timeout(10000);
 	
-	url='https://api.github.com/repos/vaadin/'+module+'/issues?state=open&page='+pageNumber+'&access_token='+token;
+	url='https://api.github.com/repos/vaadin/'+module+'/issues?state=open&page='+pageNumber;
 	let res = await axios.get(url, {
 		headers: {
 			'User-Agent': 'vaadin-transfer',
-			'Authorization': token
+			'Authorization': 'token '+ token
 		}
 	});
 	
@@ -50,8 +50,7 @@ async function main(){
 		auth = process.argv[2];
 		token = auth.split(":").pop();
     }
-	
-	fileName = "transferTicket.sh";
+
 	console.log("Generating a script to transfer the tickets");
 	console.log("Checking the transferTicket.sh file");
 
@@ -60,6 +59,9 @@ async function main(){
 		page = 1;
 		clone = "git clone git@github.com:vaadin/"+modules[j].replace("-parent","")+".git";
 		str1 = "cd " + modules[j].replace("-parent","");
+		repoName = modules[j].replace("-flow-parent","");
+		fileName = "transferTicket.sh";
+		//fileName = "transferTicket/"+repoName +"_"+fileName;
 		fs.appendFileSync(fileName, clone+"\n" + str1+"\n");
 		do {
 			data = await getRequest(modules[j], page);
@@ -68,15 +70,18 @@ async function main(){
 				
 				for (i=0; i<data.length;i++){
 					if(!data[i].pull_request){
-						str = "/opt/agent/temp/buildTmp/hub/bin/hub issue transfer "+data[i].number+" vaadin-flow-components > result.txt\n";
+						if(repoName === 'vaadin-iron-list'){
+						    repoName = 'vaadin-flow-components';
+						}
+						str = "/opt/agent/temp/buildTmp/hub/bin/hub issue transfer "+data[i].number+" "+repoName+" > result.txt\n";
 						transNumber="number=$(grep 'issues' result.txt | cut -d'/' -f7)\n"
                 
-						labelString = '"'+ modules[j].replace("-flow-parent","")+ '"';
+						labelString = '"'+ modules[j].replace("-parent","")+ '"';
 						data[i].labels.forEach(label=>{
 							labelString+= ',"'+label.name+'"';
 						})
 				
-						transLabel='curl -u '+ auth +' -H "Content-Type: application/json" -X POST -d '+"'"+'{"labels":['+labelString+']}'+"' https://api.github.com/repos/vaadin/vaadin-flow-components/issues/$number/labels"
+						transLabel='curl -u '+ auth +' -H "Content-Type: application/json" -X POST -d '+"'"+'{"labels":['+labelString+']}'+"' https://api.github.com/repos/vaadin/"+repoName+"/issues/$number/labels"
 						removeResult='rm -rf result.txt\n'
 						fs.appendFileSync(fileName, str+transNumber+transLabel+"\n"+removeResult);
 					}
