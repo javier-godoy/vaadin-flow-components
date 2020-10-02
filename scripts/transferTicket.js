@@ -83,6 +83,7 @@ async function main(){
 				
 						transLabel='curl -u '+ auth +' -H "Content-Type: application/json" -X POST -d '+"'"+'{"labels":['+labelString+']}'+"' https://api.github.com/repos/vaadin/"+repoName+"/issues/$number/labels"
 						removeResult='rm -rf result.txt\n'
+						sleepTime = 'sleep 2s\n'
 						fs.appendFileSync(fileName, str+transNumber+transLabel+"\n"+removeResult);
 					}
 				}
